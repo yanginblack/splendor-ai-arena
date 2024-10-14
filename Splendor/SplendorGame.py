@@ -65,14 +65,23 @@ class SplendorGame(BaseGame):
         self.gem_colors = ["white", "red", "green", "blue", "dark_grey", "yellow"]
         self.state = np.zeros(self.state_size)
         self.nobles = np.zeros(20)
-        self.player_number = player_number
         self.all_cards = [
             CARDS[0:40],
             CARDS[40:70],
             CARDS[70:90]
         ]
+        self.player_number = player_number
+
 
     def getInitState(self):
+        # initialize state
+        self.state = np.zeros(self.state_size)
+        self.nobles = np.zeros(20)
+        self.all_cards = [
+            CARDS[0:40],
+            CARDS[40:70],
+            CARDS[70:90]
+        ]
         # set up initial state: random 4 cards for level 1, 2, 3. 
         for i in range(4):
             level1_card = random.choice(self.all_cards[0])
