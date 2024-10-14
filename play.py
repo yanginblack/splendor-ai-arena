@@ -1,8 +1,7 @@
 from PlayGround import PlayGround
 import numpy as np
-from GameConfig import GameConfig
-
-config = GameConfig()
+from Splendor.SplendorGame import SplendorGame as Game
+from Splendor.SplendorPlayers import *
 
 def rotate_player_order(players):
     players = players[1:] + [players[0]]
@@ -12,29 +11,26 @@ def displayResults(player_performance, player_ids):
     for i in range(len(player_performance)):
         print(f"Player {player_ids[i]} performance: {player_performance[i]}")
 """
-use this script to play any two agents against each other, or play manually with
-any agent.
+use this script to play any number of agents against each other.
 """
-num_players = 3
-
-player_names = ["HumanPlayer", "RandomPlayer", "RandomPlayer"]
-
+num_players = 2
+player_names = ["RandomPlayer", "RandomPlayer"]
 num_games = 1
-
 rotate_flag = False
-
 display_flag = True
+max_steps = 100
 
 players = []
 player_ids = []
-for i in range(num_players):
-    players.append(config.initialize_player(player_names[i]))
-    player_ids.append(i+1)
+
 
 
 print("Starting the game...")
-game = config.initialize_game()
-playground = PlayGround(game, config.stopThreshold)
+game = Game(num_players)
+playground = PlayGround(game, max_steps)
+for i in range(num_players):
+    players.append(globals()[player_names[i]](game).play)
+    player_ids.append(i+1)
 
 if rotate_flag:
     num_games_per_player = num_games // num_players

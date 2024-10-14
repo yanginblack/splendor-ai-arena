@@ -49,7 +49,7 @@ class SplendorGame(BaseGame):
         42 - 47: for discarding gems when the any player has more than 10 gems in their round, all other players only have 1 action: pass, and that player
         only have five discarding actions until this player has 10 gems. 
     """
-    def __init__(self):
+    def __init__(self, player_number = 3):
         self.state_size = 301
         self.action_size = 48
         self.player_points = [173, 219, 265]
@@ -65,6 +65,7 @@ class SplendorGame(BaseGame):
         self.gem_colors = ["white", "red", "green", "blue", "dark_grey", "yellow"]
         self.state = np.zeros(self.state_size)
         self.nobles = np.zeros(20)
+        self.player_number = player_number
         self.all_cards = [
             CARDS[0:40],
             CARDS[40:70],
@@ -152,7 +153,7 @@ class SplendorGame(BaseGame):
         elif action < 47:
             nextState[self.public_remaining_gems + action-42] += 1
             nextState[self.player_gems[player] + action-42] -= 1
-        return nextState, player_id%3+1
+        return nextState, player_id%self.player_number+1
 
 
     def getValidMoves(self, state, player_id):
@@ -200,7 +201,7 @@ class SplendorGame(BaseGame):
     # multiple winners (draw) return the list of winners.
     def getGameEnded(self, state, player_id):
         # game will last until player3 complete action.
-        if player_id != 3: 
+        if player_id != self.player_number: 
             return [0]
         # get player points
         player_points = [state[self.player_points[0]], state[self.player_points[1]], state[self.player_points[2]]]
