@@ -16,7 +16,7 @@ Game class implementation for the game of Splendor.
 """
 class SplendorGame(BaseGame):
     """
-    State(len = 300): 
+    State(len = 162 + 46*player_number):
         (0 - 131) 12 cards read to be purchased, 4 cards for level1, 4 cards for level2, 4 cards for level3. 
         Each card has 11 digits: first 5 are the required gems of the card, in the order of white, red, green, blue and brown.
         The next 5 represent the number of gems this card provides. e.g. Card provide a red gem, it should be [0 1 0 0 0].
@@ -50,7 +50,7 @@ class SplendorGame(BaseGame):
         only have five discarding actions until this player has 10 gems. 
     """
     def __init__(self, player_number = 3):
-        self.state_size = 301
+        self.state_size = 162 + 46*player_number
         self.action_size = 48
         self.player_points = [173, 219, 265]
         self.player_reserved_cards = [[174, 185, 196], [220, 231, 242], [266, 277, 288]]
@@ -204,7 +204,9 @@ class SplendorGame(BaseGame):
         if player_id != self.player_number: 
             return [0]
         # get player points
-        player_points = [state[self.player_points[0]], state[self.player_points[1]], state[self.player_points[2]]]
+        player_points = []
+        for i in range(self.player_number):
+            player_points.append(state[self.player_points[i]])
 
         max_points = max(player_points)
         # if no one reach 15 points, the game is not ended.
@@ -215,14 +217,16 @@ class SplendorGame(BaseGame):
         if player_points.count(max_points) == 1:
             return [player_points.index(max_points) + 1]
         # if more than one player reach 15 points, check their development cards, the one with less cards win. If still tie then players share victory.
-        cards_count = [state[self.player_acquired_cards[0]], state[self.player_acquired_cards[1]], state[self.player_acquired_cards[2]]]
-        for i in range(3):
+        cards_count = []
+        for i in range(self.player_number):
+            cards_count.append(state[self.player_acquired_cards[i]])
+        for i in range(self.player_number):
             if player_points[i] != max_points:
                 cards_count[i] = float('inf') # only count winning player's cards.
 
         min_cards = min(cards_count)
         winners = []
-        for i in range(3):
+        for i in range(self.player_number):
             if cards_count[i] == min_cards:
                 winners.append(i+1)
         return winners
@@ -379,10 +383,11 @@ class SplendorGame(BaseGame):
         print(" "*20, end="")
         print("Player 2 Points:", self._displayNumber(state[self.player_points[1]]), "Cards: ", self._displayNumber(state[self.player_acquired_cards[1]]), end="") # 28
         print(" "*20, end="")
-        print("Player 3 Points:", self._displayNumber(state[self.player_points[2]]), "Cards: ", self._displayNumber(state[self.player_acquired_cards[2]])) # 28
-
+        if self.player_number >= 3:
+            print("Player 3 Points:", self._displayNumber(state[self.player_points[2]]), "Cards: ", self._displayNumber(state[self.player_acquired_cards[2]]), end="") # 28
+        print()
         # second line showing player gems
-        for player in range(3):
+        for player in range(self.player_number):
             print("Gems: ", end="")
             displayed_gems = 0
             for i in range(6):
@@ -395,7 +400,7 @@ class SplendorGame(BaseGame):
         print()
 
         # third line showing player tokens (acquired permanent gems)
-        for player in range(3):
+        for player in range(self.player_number):
             print("P Germs: ", end="")
             displayed_gems = 0
             for i in range(5):
@@ -409,7 +414,7 @@ class SplendorGame(BaseGame):
         print()
         # fourth section showing player reserved cards
         cards_list = []
-        for player in range(3):
+        for player in range(self.player_number):
             for i in range(3):
                 cards_list.append(self._displayCard(state[self.player_reserved_cards[player][i]:self.player_reserved_cards[player][i]+11]))
         
@@ -439,7 +444,7 @@ class SplendorGame(BaseGame):
             display_string += colored(gem_str, self.gem_colors[gem_id])*int(gem_count)
         else:
             display_string += " "*int(required_space-2)
-            display_string += str(int(gem_count))
+            display_string += colored(str(int(gem_count)), self.gem_colors[gem_id])
             display_string += colored(gem_str, self.gem_colors[gem_id])
         return display_string
 
