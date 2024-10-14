@@ -7,20 +7,18 @@ log = logging.getLogger(__name__)
 
 class PlayGround():
     """
-    This class is used to host game play between given players.
+    This class is used to host game play among given players.
     """
 
     def __init__(self, game, stopThreshold):
         """
         Input:
-            players: players list that contains player functions
+            players: player list that contains playable function
             game: Game object
-            display: a function that takes board as input and prints it (e.g.
-                     display in othello/OthelloGame). Is necessary for verbose
-                     mode.
-
-        see othello/OthelloPlayers.py for an example. See pit.py for pitting
-        human players/other baselines with each other.
+            stopThreshold: the maximum number of actions for a game
+        Provides:
+            playGame: a function to play one game
+            playGames: a function to play multiple games
         """
         self.players = []
         self.game = game

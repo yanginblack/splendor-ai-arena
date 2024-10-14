@@ -247,7 +247,7 @@ class SplendorGame(BaseGame):
             newState[self.player_states[player_id-1][0]:self.player_states[player_id-1][1]] = temp
         return newState
 
-    def stringRepresentation(self, state):
+    def hashRepresentation(self, state):
         return state.tostring()
 
     # check whether player has enough gems: permanent gems + current gems >= required gems from card.
