@@ -31,6 +31,7 @@ class PlayGround():
 
         Returns:
             winner: player who won the game (1 if player1, 2 if player2), -1 if draw
+            player1 is the first player in the players list
         """
         curPlayer = 1
         state = self.game.getInitState()
@@ -48,8 +49,9 @@ class PlayGround():
             action = cur_players[curPlayer-1](self.game.getCanonicalForm(state, curPlayer))
             valids = self.game.getValidMoves(self.game.getCanonicalForm(state, curPlayer), 1)
             action = self.game.translateCanonicalAction(action, curPlayer)
-            # Splendor specific, should be removed in the future
-            if action < 42: # only count actions that's not discarding or holding
+            # Splendor specific. Can use general function such as: self.game.countPlaySteps(state, action)
+            if action < 42 and curPlayer == 1: 
+                # only count actions that's not discarding or holding for one single player
                 it += 1
             # check if the action is valid
             if not valids[action]:
@@ -61,8 +63,11 @@ class PlayGround():
                 print("Turn ", str(it), "Player ", str(curPlayer), player_names[curPlayer-1], "Action: ", self.game.displayAction(action))
             state, curPlayer, reward = self.game.getNextState(state, curPlayer, action)
             if display_flag:
+                print("reward: ", reward)
                 self.game.display(state)
-            
+                
+                
+
             # if the game is terminated by exceeding the stopThreshold, break the loop
             if it == self.stopThreshold:
                 terminated = True
@@ -71,9 +76,10 @@ class PlayGround():
             result = self.game.getGameEnded(state, curPlayer)
         
         if display_flag:
-            print("Game over: Turn ", str(it), "Result ", str(result))
+            print("Game over: Turn ", str(it-1), "Result ", str(result))
             self.game.display(state)
-
+        # count play steps
+        self.accumulated_play_steps += it-1
         return result if not terminated else [-1]
 
     def playGames(self, num, display_flag=False, rotate_flag=False):
@@ -93,6 +99,7 @@ class PlayGround():
         cur_players = self.players.copy()
 
         for played_times in rotated_game_plays:
+            self.accumulated_play_steps = 0
             for _ in tqdm(range(played_times), desc="PlayGround Starting for {} games".format(played_times)):
                 gameResult = self.playGame(cur_players, player_names, display_flag=display_flag)
                 for i in range(len(player_ids)):
@@ -106,4 +113,5 @@ class PlayGround():
             cur_players = cur_players[1:] + cur_players[:1]
             player_names = player_names[1:] + player_names[:1]
             player_ids = player_ids[1:] + player_ids[:1]
+            log.info(f"Average play steps: {self.accumulated_play_steps/played_times}")
         return player_performance

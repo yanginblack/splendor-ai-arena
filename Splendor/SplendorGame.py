@@ -132,6 +132,7 @@ class SplendorGame(BaseGame):
             new_card = self._randomCard(nextState, action//4)
             # add new card to the state
             self._addCardToState(nextState, new_card, action//4)
+
         # purchase one of reserved cards
         elif action < 15:
             nextState = self._purchaseCard(nextState, player, nextState[self.player_reserved_cards[player][action-12]:self.player_reserved_cards[player][action-12]+11])
@@ -159,6 +160,7 @@ class SplendorGame(BaseGame):
             new_card = self._randomCard(nextState, (action-15)//4)
             # add new card to the state
             self._addCardToState(nextState, new_card, (action-15)//4)
+
         # take gems
         elif action < 42:
             for i in self.take_gems[action-27]:
@@ -169,6 +171,13 @@ class SplendorGame(BaseGame):
         elif action < 47:
             nextState[self.public_remaining_gems + action-42] += 1
             nextState[self.player_gems[player] + action-42] -= 1
+        
+        # TBD: remove after debug: check if the state has negative values
+        if np.any(nextState < 0):
+            print("Negative values in the state:", nextState)
+            print("Player:", player_id)
+            print("Action:", action)
+            raise ValueError("Negative values in the state")
         return nextState, player_id%self.player_number+1, nextState[self.player_points[player]] - state[self.player_points[player]]
 
 
@@ -215,9 +224,11 @@ class SplendorGame(BaseGame):
 
     # [0] if not ended, [1] if player 1 won, [2] if player 2 won, [3] for player 3 won.
     # multiple winners (draw) return the list of winners.
+    # please note, the game end state is the state after THE player takes action.
     def getGameEnded(self, state, player_id):
-        # game will last until player3 complete action.
-        if player_id != self.player_number: 
+        # game will last until all players complete their action.
+        # When checking has game ended, the player_id is the player about to play.
+        if player_id != 1: 
             return [0]
         # get player points
         player_points = []
@@ -256,15 +267,50 @@ class SplendorGame(BaseGame):
     # Don't do it in place, create a new array.
     # In this game, just copy the state[self.player_states[player][0]:self.player_states[player][1]] to the state[0:self.player_states[0][1]-self.player_states[0][0]]
     def getCanonicalForm(self, state, player_id):
-        newState = copy.deepcopy(state)
+        newState = state.copy()
         if player_id != 1:
             temp = state[self.player_states[0][0]:self.player_states[0][1]]
             newState[self.player_states[0][0]:self.player_states[0][1]] = newState[self.player_states[player_id-1][0]:self.player_states[player_id-1][1]]
             newState[self.player_states[player_id-1][0]:self.player_states[player_id-1][1]] = temp
         return newState
 
+    # get a simplified state of 31 digits.
+    def getSimplifiedState(self, state, player_id):
+        player = player_id - 1
+        simplified_state = np.zeros(31)
+        for i in range(15):
+            if i < 12:
+                card = state[i*11:(i+1)*11]
+            else:
+                card = state[self.player_reserved_cards[player][i-12]:self.player_reserved_cards[player][i-12]+11]
+            if sum(card[5:10]) == 0:
+                simplified_state[i*2] = -1
+                simplified_state[i*2+1] = -1
+            else:
+                # calculate how many gems does the player needed to buy this card.
+                required_gem_list = card[0:5] - state[self.player_permanent_gems[player]+0:self.player_permanent_gems[player]+5] - state[self.player_gems[player]+0:self.player_gems[player]+5]
+                required_gem_list = [max(0, x) for x in required_gem_list]
+                required_gems = max(0, sum(required_gem_list)-state[self.player_gems[player]+5])
+                simplified_state[i*2] = required_gems
+                simplified_state[i*2+1] = card[10]
+                # check if the color of this card is provided for nobles.
+                for j in range(len(self.public_nobels)):
+                    adjusted_noble_list = state[self.public_nobels[j]:self.public_nobels[j]+5] - state[self.player_permanent_gems[player]+0:self.player_permanent_gems[player]+5]
+                    adjusted_noble_list = [max(0, x) for x in adjusted_noble_list]
+                    for color_id in range(5):
+                        if card[5+color_id] == 1 and adjusted_noble_list[color_id] > 0:
+                            simplified_state[i*2+1] += state[self.public_nobels[j]+5]/sum(adjusted_noble_list)
+        simplified_state[30] = state[self.player_points[player]]
+
+        return simplified_state
+
+
+
+    # hash the state to a hashable representation.
+    # if player_id is not provided, return the hashable representation of the whole state.
+    # if player_id is provided, return the shorten version of the state: ignore the remaining deck, other player's states.
     def hashRepresentation(self, state):
-        return state.tostring()
+        return tuple(state)
 
     # check whether player has enough gems: permanent gems + current gems >= required gems from card.
     # golden gems can be used to replace any color of required gems
