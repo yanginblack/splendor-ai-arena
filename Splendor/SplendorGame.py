@@ -16,7 +16,7 @@ Game class implementation for the game of Splendor.
 """
 class SplendorGame(BaseGame):
     """
-    State(len = 162 + 46*player_number):
+    State(len = 162 + 90 + 46*player_number + 90):
         (0 - 131) 12 cards read to be purchased, 4 cards for level1, 4 cards for level2, 4 cards for level3. 
         Each card has 11 digits: first 5 are the required gems of the card, in the order of white, red, green, blue and brown.
         The next 5 represent the number of gems this card provides. e.g. Card provide a red gem, it should be [0 1 0 0 0].
@@ -24,24 +24,25 @@ class SplendorGame(BaseGame):
         e.g. [0 1 0 2 2 0 0 0 0 0 1 0] is the card required 1 red gem, 2 blue gems, 2 brown gems. Provides 1 brown gem. No points.
         (132 - 155) 4 nobles, 6 digits for 1 noble. e.g. [1 1 1 1 1 3] is a noble that requires 1 of each gem, provides 3 points.
         (156 - 161) public remaining gems: white, red, green, blue, brown and gold.
-        (162 - 207) player1 info 46 digits
-            162 - 167: player 1 gems: white, red, green, blue, brown and gold.
-            168 - 172: player 1 permanent gems: white, red, green, blue, and brown.
-            173: player 1 points
-            174 - 206: player 1 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
-            207: player 1 acquired cards.
-        208 - 253: player 2 info
-            208 - 213: player 2 gems: white, red, green, blue, brown and gold.
-            214 - 218: player 2 permanent gems: white, red, green, blue, and brown.
-            219: player 2 points
-            220 - 252: player 2 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
-            253: player 2 acquired cards.
-        254 - 299: player 3 info
-            254 - 259: player 3 gems: white, red, green, blue, brown and gold.
-            260 - 264: player 3 permanent gems: white, red, green, blue, and brown.
-            265: player 3 points
-            266 - 298: player 3 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
-            299: player 3 acquired cards.
+        (162 - 251) 90 digits represent card deck, 0 meaning card is taken and 1 meaning card is in the deck.
+        (252 - 297) player info, 46 digits for each player
+            252 - 257: player 1 gems: white, red, green, blue, brown and gold.
+            258 - 262: player 1 permanent gems: white, red, green, blue, and brown.
+            263: player 1 points
+            264 - 296: player 1 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
+            297: player 1 acquired cards.
+        298 - 343: player 2 info
+            298 - 303: player 2 gems: white, red, green, blue, brown and gold.
+            304 - 308: player 2 permanent gems: white, red, green, blue, and brown.
+            309: player 2 points
+            310 - 342: player 2 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
+            343: player 2 acquired cards.
+        344 - 389: player 3 info
+            344 - 349: player 3 gems: white, red, green, blue, brown and gold.
+            350 - 354: player 3 permanent gems: white, red, green, blue, and brown.
+            355: player 3 points
+            356 - 388: player 3 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
+            389: player 3 acquired cards.
     Action (len = 48):    
         0 - 14: 12+3 cards purchase, 4 cards per row, row 0 is level 1, row 1 is level 2, row 2 is level 3. (0-11), 3 reserved card purchase(12-14), 
         15 - 26: 12 cards reserve, rows can columns are the same as cards purchase, (15-26), 5 taking two gems of (white, red, green, blue and brown) (27-31), 
@@ -50,61 +51,61 @@ class SplendorGame(BaseGame):
         only have five discarding actions until this player has 10 gems. 
     """
     def __init__(self, player_number = 3):
-        self.state_size = 162 + 46*player_number
+        self.state_size = 162 + 90 + 46*player_number
         self.action_size = 48
-        self.player_points = [173, 219, 265]
-        self.player_reserved_cards = [[174, 185, 196], [220, 231, 242], [266, 277, 288]]
-        self.player_permanent_gems = [168, 214, 260]
-        self.player_gems = [162, 208, 254]
-        self.player_states = [[162, 208], [208, 254], [254, 300]] # [start, end) of player states
+        self.player_points = [263, 309, 355]
+        self.player_reserved_cards = [[264, 275, 286], [310, 321, 332], [356, 367, 378]]
+        self.player_permanent_gems = [258, 304, 350]
+        self.player_gems = [252, 298, 344]
+        self.player_states = [[252, 298], [298, 344], [344, 390]] # [start, end) of player states
+        self.player_acquired_cards = [297, 343, 389]
+
         self.public_remaining_gems = 156
         self.public_nobels = [132, 138, 144, 150]
+        self.public_deck = [162, 202, 232]
+        self.public_level_cards_count = [40, 30, 20]
         self.take_gems = [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [0, 1, 2], [0, 1, 3], [0, 1, 4], [0, 2, 3], [0, 2, 4], [0, 3, 4], [1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]]
         self.level_cards = [0, 44, 88]
-        self.player_acquired_cards = [207, 253, 299]
         self.gem_colors = ["white", "red", "green", "blue", "dark_grey", "yellow"]
-        self.state = np.zeros(self.state_size)
+        self.noble_counts = [0, 0, 3, 4, 5]
+        self.public_gem_counts = [0, 0, 4, 5, 7]
         self.nobles = np.zeros(20)
-        self.all_cards = [
-            CARDS[0:40],
-            CARDS[40:70],
-            CARDS[70:90]
-        ]
         self.player_number = player_number
 
 
     def getInitState(self):
         # initialize state
-        self.state = np.zeros(self.state_size)
-        self.nobles = np.zeros(20)
-        self.all_cards = [
-            CARDS[0:40],
-            CARDS[40:70],
-            CARDS[70:90]
-        ]
+        state = np.zeros(self.state_size)
+        nobles = np.zeros(20)
+        # set all cards in the deck to 1
+        for i in range(3):
+            state[self.public_deck[i]:self.public_deck[i]+self.public_level_cards_count[i]] = 1
         # set up initial state: random 4 cards for level 1, 2, 3. 
-        for i in range(4):
-            level1_card = random.choice(self.all_cards[0])
-            self.state[i*11+self.level_cards[0]:(i+1)*11+self.level_cards[0]] = level1_card
-            self.all_cards[0].remove(level1_card)
+        random_picked_cards = [[] for _ in range(3)]
+        for level in range(3):
+            for i in range(4):
+                card = self._randomCard(state, level)
+                random_picked_cards[level].append(card)
+        # assign sorted cards to state
+        for level in range(3):
+            # sort the cards
+            random_picked_cards[level].sort(key=lambda x: (x[10], sum(x[0:5]), x[0], x[1], x[2], x[3], x[4]))
+            for i in range(4):
+                state[i*11+self.level_cards[level]:(i+1)*11+self.level_cards[level]] = random_picked_cards[level][i]
 
-            level2_card = random.choice(self.all_cards[1])
-            self.state[i*11+self.level_cards[1]:(i+1)*11+self.level_cards[1]] = level2_card
-            self.all_cards[1].remove(level2_card)
+        # pick random nobels.
+        noble_count = self.noble_counts[self.player_number]
+        nobles = random.sample(NOBLES, noble_count)
 
-            level3_card = random.choice(self.all_cards[2])
-            self.state[i*11+self.level_cards[2]:(i+1)*11+self.level_cards[2]] = level3_card
-            self.all_cards[2].remove(level3_card)
+        for i in range(noble_count):
+            state[self.public_nobels[i]:self.public_nobels[i]+6] = nobles[i]
 
-        # pick 4 random nobels.
-        self.nobles = random.sample(NOBLES, 4)
-        for i in range(4):
-            self.state[self.public_nobels[i]:self.public_nobels[i]+6] = self.nobles[i]
-
-        # five gems available for each color as a three player game.
-        self.state[self.public_remaining_gems:self.public_remaining_gems+6] = [5, 5, 5, 5, 5, 5]
+        # set gems available for each color
+        state[self.public_remaining_gems:self.public_remaining_gems+5] = [self.public_gem_counts[self.player_number]]*5
+        # golden gems is always 5
+        state[self.public_remaining_gems+5] = 5
         
-        return np.array(self.state)
+        return np.array(state)
 
     def getStateSize(self):
         return (1, 1, self.state_size)
@@ -117,20 +118,23 @@ class SplendorGame(BaseGame):
     # Returns:
     #    nextState: state after applying action
     #    nextPlayer: player who plays in the next turn. Please be aware that next player may not be the player on sequence.
+    #    reward: reward of the points player gets this turn
     def getNextState(self, state, player_id, action):
-        nextState = state
+        nextState = state.copy()
         player = player_id - 1
         # purchase one of public cards
         if action < 12:
             # purchase one of public cards
-            nextState = self._purchaseCard(state, player, state[action*11:(action+1)*11])
+            nextState = self._purchaseCard(nextState, player, nextState[action*11:(action+1)*11])
+            # pick up the card from state
+            nextState[action*11:(action+1)*11] = np.zeros(11)
             # replace the card with the next card in the deck. Use all zeros if deck is empty.
-            new_card = random.choice(self.all_cards[action//4]) if len(self.all_cards[action//4]) > 0 else np.zeros(11)
-            nextState[action*11:(action+1)*11] = new_card
-            self.all_cards[action//4].remove(new_card)
+            new_card = self._randomCard(nextState, action//4)
+            # add new card to the state
+            self._addCardToState(nextState, new_card, action//4)
         # purchase one of reserved cards
         elif action < 15:
-            nextState = self._purchaseCard(state, player, state[self.player_reserved_cards[player][action-12]:self.player_reserved_cards[player][action-12]+11])
+            nextState = self._purchaseCard(nextState, player, nextState[self.player_reserved_cards[player][action-12]:self.player_reserved_cards[player][action-12]+11])
             # set the reserved card slot to be empty
             nextState[self.player_reserved_cards[player][action-12]:self.player_reserved_cards[player][action-12]+11] = np.zeros(11)
         # reserve one of public cards
@@ -138,20 +142,23 @@ class SplendorGame(BaseGame):
             # find one empty slot for the player
             reserve_card_index = 0
             for i in range(3):
-                if sum(state[self.player_reserved_cards[player][i]:self.player_reserved_cards[player][i]+11]) == 0:
+                if sum(nextState[self.player_reserved_cards[player][i]:self.player_reserved_cards[player][i]+11]) == 0:
                     reserve_card_index = i
                     break
             # reserve one of the public cards
             nextState[self.player_reserved_cards[player][reserve_card_index]:self.player_reserved_cards[player][reserve_card_index]+11] = nextState[(action-15)*11:(action-15+1)*11]
-            
+            # pick up the card from state
+            nextState[(action-15)*11:(action-15+1)*11] = np.zeros(11)
+
             # add one golden gem to the player, if there is any.
             if nextState[self.public_remaining_gems+5] > 0:
                 nextState[self.player_gems[player]+5] += 1
                 nextState[self.public_remaining_gems+5] -= 1
+            
             # replace the card with the next card in the deck. Use all zeros if deck is empty.
-            new_card = random.choice(self.all_cards[(action-15)//4]) if len(self.all_cards[(action-15)//4]) > 0 else np.zeros(11)
-            nextState[(action-15)*11:(action-15+1)*11] = new_card
-            self.all_cards[(action-15)//4].remove(new_card)
+            new_card = self._randomCard(nextState, (action-15)//4)
+            # add new card to the state
+            self._addCardToState(nextState, new_card, (action-15)//4)
         # take gems
         elif action < 42:
             for i in self.take_gems[action-27]:
@@ -162,7 +169,7 @@ class SplendorGame(BaseGame):
         elif action < 47:
             nextState[self.public_remaining_gems + action-42] += 1
             nextState[self.player_gems[player] + action-42] -= 1
-        return nextState, player_id%self.player_number+1
+        return nextState, player_id%self.player_number+1, nextState[self.player_points[player]] - state[self.player_points[player]]
 
 
     def getValidMoves(self, state, player_id):
@@ -301,7 +308,7 @@ class SplendorGame(BaseGame):
         state[self.player_acquired_cards[player]] += 1
         # check whether the player satisfied the noble requirement: here is a rule modification, a player can take multiple nobles at once, the original rule required only one noble per action.
         acquired_nobels = []
-        for i in range(4):
+        for i in range(self.noble_counts[self.player_number]):
             if sum(state[self.public_nobels[i]:self.public_nobels[i]+6]) > 0: # noble is not taken
                 valid_noble = True
                 for j in range(5):
@@ -312,6 +319,44 @@ class SplendorGame(BaseGame):
                     state[self.player_points[player]] += state[self.public_nobels[i]+5]
                     state[self.public_nobels[i]:self.public_nobels[i]+6] = np.zeros(6)
         return state
+    
+    def _addCardToState(self, state, card, level):
+        # ignore if card is empty
+        if sum(card[5:10]) == 0:
+            return
+        # extract all cards from state
+        cards = []
+        for i in range(4):
+            if sum(state[self.level_cards[level]+i*11:self.level_cards[level]+i*11+11]) != 0:
+                cards.append(state[self.level_cards[level]+i*11:self.level_cards[level]+i*11+11].copy())
+
+        # add the new card to card list
+        cards.append(card)
+        # sort the cards based on points, then sum of required gems, then required gems for each color.
+        cards.sort(key=lambda x: (x[10], sum(x[0:5]), x[0], x[1], x[2], x[3], x[4]))
+        # add the cards to the state
+        for i in range(4):
+            if i < len(cards):
+                state[self.level_cards[level]+i*11:self.level_cards[level]+i*11+11] = cards[i]
+            else:
+                state[self.level_cards[level]+i*11:self.level_cards[level]+i*11+11] = np.zeros(11)
+    
+    # randomly pick a card from the level's deck.
+    def _randomCard(self, state, level):
+        available_cards_index_list = []
+        for i in range(self.public_level_cards_count[level]):
+            if state[self.public_deck[level]+i] == 1:
+                available_cards_index_list.append(i)
+        if len(available_cards_index_list) == 0:
+            return np.zeros(11)
+        new_card_index = random.choice(available_cards_index_list)
+        # mark the new card unavailable
+        state[self.public_deck[level]+new_card_index] = 0
+        # find card index in CARDS
+        actual_card_index = new_card_index
+        for i in range(level):
+            actual_card_index += self.public_level_cards_count[i]
+        return CARDS[actual_card_index]
 
     # display a more readable action name instead of a pure number.
     def displayAction(self, action):
