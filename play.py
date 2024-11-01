@@ -14,7 +14,7 @@ def displayResults(player_performance, player_names):
 use this script to play any number of agents against each other.
 """
 num_players = 3
-player_names = ["RandomPlayer", "RandomPlayer", "RandomPlayer"]
+player_names = ["GreedyPlayer", "RandomPlayer", "RandomPlayer"]
 num_games = 30
 rotate_flag = True
 display_flag = False

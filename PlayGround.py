@@ -90,8 +90,9 @@ class PlayGround():
         player_ids = [i+1 for i in range(len(self.players))]
         player_names = self.player_names.copy()
         rotated_game_plays = [num // len(self.players) for _ in range(len(self.players))] if rotate_flag else [num]
+        cur_players = self.players.copy()
+
         for played_times in rotated_game_plays:
-            cur_players = self.players.copy()
             for _ in tqdm(range(played_times), desc="PlayGround Starting for {} games".format(played_times)):
                 gameResult = self.playGame(cur_players, player_names, display_flag=display_flag)
                 for i in range(len(player_ids)):
