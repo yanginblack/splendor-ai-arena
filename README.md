@@ -46,7 +46,7 @@ Splendor-AI-Arena provides a simulation environment for developing and testing A
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/splendor-ai-arena.git
+   git clone https://github.com/yanginblack/splendor-ai-arena.git
 2. Enter the repo
    ```bash
    cd splendor-ai-arena
@@ -58,13 +58,14 @@ Splendor-AI-Arena provides a simulation environment for developing and testing A
 ## Game Overview
 ### Game.py
 Game.py is the game environment, define the state dimentions and data structure, action data structure, initiate state, providing functions to interact with state, and provide display function to output human readable prints of the state.
-####Main Functions
+
+#### Main Functions
 - getNextState: Takes the current player ID and state, executes the action, and returns the next state and player ID.
 - getValidMoves: Takes the current player ID and state, returning a list indicating valid actions (1 for valid, 0 for invalid).
 - canonicalForm: Transforms the state into a canonical form relative to the current player, simplifying training and gameplay.
 - translateAction: Converts actions from the canonical form back to the specific player's perspective.
 - display: Displays the state in a human-readable format.
-#### State Defination
+#### State Definition
 State(len = 300): 
 - (0 - 131) 12 cards read to be purchased, 4 cards for level1, 4 cards for level2, 4 cards for level3. Each card has 11 digits: first 5 are the required gems of the card, in the order of white, red, green, blue and brown. The next 5 represent the number of gems this card provides. e.g. Card provide a red gem, it should be [0 1 0 0 0].The last digit is the card's points.
 e.g. [0 1 0 2 2 0 0 0 0 0 1 0] is the card required 1 red gem, 2 blue gems, 2 brown gems. Provides 1 brown gem. No points.
@@ -88,7 +89,7 @@ e.g. [0 1 0 2 2 0 0 0 0 0 1 0] is the card required 1 red gem, 2 blue gems, 2 br
 - 265: player 3 points
 - 266 - 298: player 3 reserved cards. 11 digits for 1 card. Maximum reserved 3 cards.
 - 299: player 3 acquired cards.
-#### Action Defination
+#### Action Definition
 Action (len = 48):    
 - 0 - 14: 12+3 cards purchase, 4 cards per row, row 0 is level 1, row 1 is level 2, row 2 is level 3. (0-11), 3 reserved card purchase(12-14), 
 - 15 - 26: 12 cards reserve, rows can columns are the same as cards purchase, (15-26), 5 taking two gems of (white, red, green, blue and brown) (27-31), 
