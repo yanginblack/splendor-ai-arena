@@ -27,8 +27,12 @@ class HumanPlayer():
         # if only one valid action and it is the pass action, return pass
         if np.sum(valids) == 1 and valids[47]:
             return 47
-        print("Valid actions: ", valids)
-        print("Please input your action:")
+        print("Valid actions:")
+        for i in range(len(valids)):
+            if valids[i]:
+                print("action ", i, ": ", self.game.displayAction(i), end="\t")
+        print()
+        print("Please input your action as a number:")
         while True:
             action = int(input())
             if valids[action]:
