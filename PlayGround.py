@@ -1,6 +1,9 @@
 import logging
 from termcolor import colored
 from tqdm import tqdm
+import torch
+import pickle
+import csv
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +27,7 @@ class PlayGround():
         self.game = game
         self.player_names = player_names
         self.stopThreshold = stopThreshold
+        
 
     def playGame(self, players, player_names, display_flag=False):
         """
@@ -44,6 +48,7 @@ class PlayGround():
         # A flag to terminate the game when the depth is reached
         terminated = False
         result = self.game.getGameEnded(state, curPlayer)
+        data = []
 
         while result[0] == 0:
             action = cur_players[curPlayer-1](self.game.getCanonicalForm(state, curPlayer))
@@ -61,7 +66,24 @@ class PlayGround():
 
             if display_flag:
                 print("Turn ", str(it), "Player ", str(curPlayer), player_names[curPlayer-1], "Action: ", self.game.displayAction(action))
+            #state, curPlayer, reward = self.game.getNextState(state, curPlayer, action)
+
+            original_state = state
             state, curPlayer, reward = self.game.getNextState(state, curPlayer, action)
+            if curPlayer == 1:
+                data += list(original_state)
+                if len(data) == 782:
+                    with open("datamixed4.csv", "a", newline="") as file:
+                        writer = csv.writer(file)
+                        writer.writerow(data)
+                data = list(original_state).copy()
+                try:
+                    action = action.item
+                except:
+                    pass
+                data += [action]
+                data += [reward]
+
             if display_flag:
                 print("reward: ", reward)
                 self.game.display(state)
@@ -74,13 +96,21 @@ class PlayGround():
                 break
 
             result = self.game.getGameEnded(state, curPlayer)
+            if result[0] != 0:
+                data += list(state)
+                if len(data) == 782:
+                    with open("datamixed4.csv", "a", newline="") as file:
+                        writer = csv.writer(file)
+                        writer.writerow(data)
         
         if display_flag:
             print("Game over: Turn ", str(it-1), "Result ", str(result))
             self.game.display(state)
         # count play steps
         self.accumulated_play_steps += it-1
+        
         return result if not terminated else [-1]
+    
 
     def playGames(self, num, display_flag=False, rotate_flag=False):
         """

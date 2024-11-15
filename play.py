@@ -14,7 +14,48 @@ sys.path.append('./dqn')
 sys.path.append('./mcts')
 log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
+import torch
 
+class SPL(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim,
+                 dropout):
+        super(SPL, self).__init__()
+
+        self.layer1 = torch.nn.Linear(input_dim, hidden_dim, bias = True)
+        
+        self.layer2 = torch.nn.Linear(hidden_dim, output_dim, bias = True)
+
+        # Probability of an element getting zeroed
+        self.dropout = torch.nn.Dropout(p = dropout)
+        self.activation = torch.nn.ReLU()
+
+
+    def reset_parameters(self):
+        self.layer1.reset_parameters()
+        self.layer2.reset_parameters()
+
+    def forward(self, state):
+        out = self.layer1(state)
+        out = self.activation(out)
+        out = self.dropout(out)
+        out = self.layer2(out)
+
+        return out
+
+    def predict(self, state_prime):
+      out = self.layer1(state_prime)
+      out = self.activation(out)
+      out = self.layer2(out)
+
+      return torch.max(out, dim = 1).values
+
+    def predictaction(self, state_prime):
+      out = self.layer1(state_prime)
+      out = self.activation(out)
+      out = self.layer2(out)
+
+      return out
+    
 def rotate_player_order(players):
     players = players[1:] + [players[0]]
     return players
@@ -31,6 +72,12 @@ num_players = 3
 
 player_names = ["MCTSPlayer", "GreedyPlayer", "GreedyPlayer"]
 num_games = 30
+=======
+#player_names = ["SPLPlayer", "GreedyPlayer", "RandomPlayer"]
+# player_names = ["SPLPlayer", "RandomPlayer", "RandomPlayer"]
+#player_names = ["GreedyPlayer", "SPLPlayer", "RandomPlayer"]
+#player_names = ["RandomPlayer", "RandomPlayer", "RandomPlayer"]
+num_games = 300
 rotate_flag = True
 display_flag = False
 max_steps = 500 # for one single player, the maximum number of steps in one game

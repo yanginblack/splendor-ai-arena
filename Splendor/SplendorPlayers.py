@@ -2,6 +2,8 @@ import numpy as np
 from mcts.MCTS import MCTS
 # from mcts.NNet import NNetWrapper as nn
 
+import pickle 
+import torch
 """
 Define players for the game of Splendor.
 All players received canonical states, meaning they should only behave as the first player.
@@ -252,3 +254,21 @@ class MCTSPlayer():
     def play(self, state):
         pi = self.mcts.play(state, 0)
         return np.argmax(pi)
+
+    
+class SPLPlayer():
+    def __init__(self, game):
+        self.game = game
+        #self.model = pickle.load(open("model_data_updated_data10_new60.pkl", 'rb'))
+        self.model = pickle.load(open("model_data1.pkl", 'rb'))
+
+    def play(self, state):
+        val, indices = torch.sort(self.model.predictaction(torch.tensor(state).float()), descending = True)
+        i = 0
+        valids = self.game.getValidMoves(state, 1)
+        indices = indices.tolist()
+        action = indices[i]
+        while not valids[action]:
+            i+=1
+            action = indices[i]
+        return action
