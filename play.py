@@ -69,15 +69,10 @@ def displayResults(player_performance, player_names):
 use this script to play any number of agents against each other.
 """
 num_players = 3
-
-player_names = ["MCTSPlayer", "GreedyPlayer", "GreedyPlayer"]
+# available players: SPLPlayer, RandomPlayer, GreedyPlayer, MCTSPlayer, DQNPlayer
+player_names = ["SPLPlayer", "RandomPlayer", "RandomPlayer"]
 num_games = 30
-=======
-#player_names = ["SPLPlayer", "GreedyPlayer", "RandomPlayer"]
-# player_names = ["SPLPlayer", "RandomPlayer", "RandomPlayer"]
-#player_names = ["GreedyPlayer", "SPLPlayer", "RandomPlayer"]
-#player_names = ["RandomPlayer", "RandomPlayer", "RandomPlayer"]
-num_games = 300
+
 rotate_flag = True
 display_flag = False
 max_steps = 500 # for one single player, the maximum number of steps in one game
