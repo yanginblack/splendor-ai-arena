@@ -9,7 +9,6 @@ from Splendor.SplendorPlayers import DQNPlayer
 from Splendor.SplendorPlayers import SIMDQNPlayer
 from Splendor.SplendorPlayers import RandomPlayer
 from Splendor.SplendorPlayers import GreedyPlayer
-from Splendor.SplendorPlayers import AdvancedGreedyPlayer
 import os
 from pickle import Pickler, Unpickler
 
@@ -99,11 +98,11 @@ class Train():
 
                 player1 = DQNPlayer(self.game, self.qnet)
                 player2 = GreedyPlayer(self.game)
-                player3 = AdvancedGreedyPlayer(self.game)
+                player3 = RandomPlayer(self.game)
                 players = [player1.play,
                             player2.play,
                                 player3.play]
-                player_names = ["MODEL", "Greedy", "AdvancedGreedy"]
+                player_names = ["MODEL", "Greedy", "Random"]
 
                 playground = PlayGround(self.game, players, player_names, self.args['maxSteps'])
                 performance = playground.playGames(self.args['arenaCompare'], display_flag=False, rotate_flag=True)
@@ -190,7 +189,6 @@ class SelfPlay():
         self.curPlayer = 1
         episodeStep = 0
         greedyPlayer = GreedyPlayer(self.game)
-        advancedGreedyPlayer = AdvancedGreedyPlayer(self.game)
         
         while True:
             episodeStep += 1
@@ -211,10 +209,10 @@ class SelfPlay():
                         action = self.getRandomAction(valids)
             elif self.curPlayer == 2:
                 # greedy action
-                action = advancedGreedyPlayer.play(canonicalState)
+                action = greedyPlayer.play(canonicalState)
             else:
                 # random action
-                action = advancedGreedyPlayer.play(canonicalState)
+                action = randomPlayer.play(canonicalState)
             # print("player: ", self.curPlayer)
             # print("action: ", self.game.displayAction(action))
             pre_player = self.curPlayer
@@ -241,24 +239,16 @@ class SelfPlay():
                         canonicalState, action, q_values, reward = trainDataPerPlayer[player][i]
 
                         # calculate the maxQ value for the next state
-                        # max_target_q_value = 0
-                        # if i < len(trainDataPerPlayer[player]) - 1:
-                        #     canonical_next_state = trainDataPerPlayer[player][i+1][0]
-                        #     target_q_values = target_agent.predict(canonical_next_state)[0]
-                        #     valids = self.game.getValidMoves(canonical_next_state, 1)
-                        #     max_target_q_value = np.max(target_q_values*valids)
-                        #     # q_values[action] = reward/self.args['rewardScale'] - self.args['penalty'] + max_target_q_value
-                        #     q_values[action] = self.args['gamma']*max_target_q_value
-                        # else:
-                        #     q_values[action] = 1 if (player+1) in r else -1
-                        # result.append((canonicalState, q_values.copy()))
-                        if player > 0:
-                            q_values = np.zeros(len(q_values))
-                            q_values[action] = 1
-
-                            result.append((canonicalState, q_values.copy()))
-                    # print("new q_value: ", q_values[action])
-
-                #     result.append((canonicalState, q_values))
+                        max_target_q_value = 0
+                        if i < len(trainDataPerPlayer[player]) - 1:
+                            canonical_next_state = trainDataPerPlayer[player][i+1][0]
+                            target_q_values = target_agent.predict(canonical_next_state)[0]
+                            valids = self.game.getValidMoves(canonical_next_state, 1)
+                            max_target_q_value = np.max(target_q_values*valids)
+                            # q_values[action] = reward/self.args['rewardScale'] - self.args['penalty'] + max_target_q_value
+                            q_values[action] = self.args['gamma']*max_target_q_value
+                        else:
+                            q_values[action] = 1 if (player+1) in r else -1
+                        result.append((canonicalState, q_values.copy()))
                 
                 return result

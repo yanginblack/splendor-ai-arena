@@ -70,7 +70,7 @@ use this script to play any number of agents against each other.
 """
 num_players = 3
 # available players: SPLPlayer, RandomPlayer, GreedyPlayer, MCTSPlayer, DQNPlayer
-player_names = ["SPLPlayer", "RandomPlayer", "RandomPlayer"]
+player_names = ["MCTSPlayer", "SPLPlayer", "DQNPlayer"]
 num_games = 30
 
 rotate_flag = True

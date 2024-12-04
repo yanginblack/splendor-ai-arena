@@ -12,7 +12,6 @@ from tqdm import tqdm
 from PlayGround import PlayGround
 from Splendor.SplendorPlayers import RandomPlayer
 from Splendor.SplendorPlayers import GreedyPlayer
-from Splendor.SplendorPlayers import AdvancedGreedyPlayer
 
 log = logging.getLogger(__name__)
 
@@ -48,14 +47,12 @@ class Coach():
             log.info(f'Starting Iter #{i} ...')
             trainExamples = deque([], maxlen=self.args['iterQueueMaxLen'])
             
-            # TODO: think about how to set temperature, instead of using a fixed value
             temperature = 1 if i < int(self.args['numIters']/2) else 0
             log.info(f"temperature: {temperature}")
 
             for _ in tqdm(range(self.args['episodes']), desc="Self Play"):
                 self.mcts = MCTS(self.game, self.nnet, self.args)
-                # trainExamples += self.runEpisode(temperature)
-                trainExamples += self.runEpisodeWithoutMCTS(temperature)
+                trainExamples += self.runEpisode(temperature)
             # save the iteration examples to the history 
             self.trainExamplesHistory.append(trainExamples)
 
@@ -110,9 +107,9 @@ class Coach():
                     self.nnet.save_checkpoint(folder=self.args['checkpoint'], filename="greedy_defeat.pth.tar")
                 
                 players = [lambda x: np.argmax(nmcts.play(x, 0)),
-                            AdvancedGreedyPlayer(self.game).play,
+                            RandomPlayer(self.game).play,
                                 GreedyPlayer(self.game).play]
-                player_names = ["NEW_MCTS", "AdvancedGreedyPlayer", "GreedyPlayer"]
+                player_names = ["NEW_MCTS", "RandomPlayer", "GreedyPlayer"]
 
                 playground = PlayGround(self.game, players, player_names, self.args['maxSteps'])
                 performance = playground.playGames(self.args['arenaCompare'], display_flag=False, rotate_flag=True)
@@ -143,22 +140,6 @@ class Coach():
     def isFileExists(self, filename):
         folder = self.args['checkpoint']
         return os.path.exists(os.path.join(folder, filename))
-
-    def runEpisodeWithoutMCTS(self, temperature):
-        trainData = []
-        state = self.game.getInitState()
-        self.curPlayer = 1
-        episodeStep = 0
-        player_list = [AdvancedGreedyPlayer(self.game), RandomPlayer(self.game), RandomPlayer(self.game)]
-        while True:
-            episodeStep += 1
-            canonicalState = self.game.getCanonicalForm(state, self.curPlayer)
-            action = player_list[self.curPlayer-1].play(canonicalState)
-            state, self.curPlayer, _ = self.game.getNextState(state, self.curPlayer, action)
-            trainData.append([canonicalState, self.curPlayer])
-            r = self.game.getGameEnded(state, self.curPlayer)
-            if r[0] != 0 or episodeStep == self.args['maxSteps']:
-                return [(x[0], 1 * ((-1) ** (x[1] not in r))) for x in trainData]
 
     def runEpisode(self, temperature):
         """
