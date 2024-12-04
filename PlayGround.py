@@ -125,7 +125,11 @@ class PlayGround():
         player_performance = [{"winning": 0, "losing": 0, "draws": 0} for _ in range(len(self.players))]
         player_ids = [i+1 for i in range(len(self.players))]
         player_names = self.player_names.copy()
-        rotated_game_plays = [num // len(self.players) for _ in range(len(self.players))] if rotate_flag else [num]
+        if rotate_flag and num // len(self.players) > 0:
+            rotated_game_plays = [num // len(self.players) for _ in range(len(self.players))]
+        else:
+            log.warning("Rotate flag is set to True, but the number of games is not enough to rotate the players.")
+            rotated_game_plays = [num]
         cur_players = self.players.copy()
 
         for played_times in rotated_game_plays:
